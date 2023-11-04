@@ -1,2 +1,2 @@
 # ProjektObrazy
-Projekt programu do obróbki obrazu
+Projekt programu do obróbki obrazu na Uczelnie
