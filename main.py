@@ -5,6 +5,7 @@ from PIL import Image, ImageTk
 import numpy as np
 import os
 from tkinter import messagebox
+import cv2
 
 
 class Window:
@@ -63,6 +64,7 @@ class Binary:
         image = self.image if self.image.mode == "L" else self.image.convert("L")
         return image
 
+# LAB3
     def logical_not(self):
         image = self.preprocess_image()
         pixel_values = list(image.getdata())
@@ -99,17 +101,13 @@ class Binary:
         or_image.putdata(or_values)
         return or_image
 
-    def logical_xor(self, image, image1):
-        image = self.preprocess_image()
-        image1 = image1.preprocess_image()
-
-        pixel_values1 = list(image1.getdata())
-        pixel_values2 = list(image2.getdata())
-
-        xor_values = [value1 ^ value2 for value1, value2 in zip(pixel_values1, pixel_values2)]
-
-        xor_image = Image.new('L', self.image.size)
-        xor_image.putdata(xor_values)
+    def logical_xor(self, image_2):
+        image1 = self.preprocess_image()
+        image2 = image_2.preprocess_image()
+        pixel_data1 = np.array(image1)
+        pixel_data2 = np.array(image2)
+        xor_array = np.bitwise_xor(pixel_data1, pixel_data2)
+        xor_image = Image.fromarray(xor_array)
         return xor_image
 
 class Histogram:
@@ -341,26 +339,25 @@ class ImageWindow(Window):
 
         super().__init__(self.image_window, parent)
     def create_menu(self):
-        # Create the top panel with buttons
+
         top_panel = tk.Frame(self.image_window, height=50, width=400)
         top_panel.pack(fill=tk.BOTH)
 
-        # Create a menu button
+
         menu_button = tk.Menubutton(top_panel, text="Lab1", underline=0, padx=5)
         menu_button.pack(side=tk.LEFT)
 
-        # Create a menu
+
         menu = tk.Menu(menu_button, tearoff=0)
         menu_button.configure(menu=menu)
 
-        # Add options to the menu
-        menu.add_command(label="Otwórz obraz", command=self.open_new_image)
+
         menu.add_command(label="Zapisz obraz", command=self.save_image)
         menu.add_command(label="Duplikuj", command=self.duplicate_image)
         menu.add_command(label="Pokaż Histogram", command=self.show_histogram)
         menu.add_command(label="Pokaż LUT", command=self.show_lut_table)
 
-        # Create a menu button
+
 
         menu_button = tk.Menubutton(top_panel, text="Lab2", underline=0, padx=5)
         menu_button.pack(side=tk.LEFT)
@@ -397,6 +394,14 @@ class ImageWindow(Window):
         menu.add_command(label="AND", command=self.show_logical_and)
         menu.add_command(label="OR", command=self.show_logical_or)
         menu.add_command(label="XOR", command=self.show_logical_xor)
+
+        menu_button = tk.Menubutton(top_panel, text="Lab4", underline=0, padx=5)
+        menu_button.pack(side=tk.LEFT)
+
+        # Create a menu
+        menu = tk.Menu(menu_button, tearoff=0)
+        menu_button.configure(menu=menu)
+
 
     def open_new_image(self):
         file_path = filedialog.askopenfilename()
@@ -499,6 +504,7 @@ class ImageWindow(Window):
         image = binary.reduce_grayscale_levels(levels)
         self.update_image(image)
 
+#Lab 3
     def show_add_image(self):
         file_path = filedialog.askopenfilename()
 
@@ -556,18 +562,19 @@ class ImageWindow(Window):
 
     def show_logical_or(self):
         file_path = filedialog.askopenfilename()
-
         if file_path:
             image1 = Image.open(file_path)
             binary = Binary(self.image)
             image = binary.logical_or(Binary(image1))
             self.update_image(image)
 
-
-    def show_logical_xor(self, image1):
-        binary = Binary(self.image)
-        image = binary.logical_xor(image1)
-        self.update_image(image)
+    def show_logical_xor(self):
+        file_path = filedialog.askopenfilename()
+        if file_path:
+            image1 = Image.open(file_path)
+            binary = Binary(self.image)
+            result_image = binary.logical_xor(Binary(image1))
+            self.update_image(result_image)
 
 class LutWindow:
     def __init__(self, image, path, parent):
@@ -626,7 +633,9 @@ class Multi:
         unique_colors = set(self.image.getdata())
         self.is_gray_scale = True if len(unique_colors) <= 256 else False
 
-    def preprocess_image(self, image):
+    def preprocess_image(self, image=None):
+        if image is None:
+            image = self.image
         image = image if image.mode == "L" else image.convert("L")
         return image
 
@@ -768,6 +777,18 @@ class MainWindow(Window):
             image_window = ImageWindow(path=file_path, image=Image.open(file_path), parent=self)
             self.add_child(image_window)
 
+class openCV():
+    def smooth_image(image, mask_type='average'):
+        if mask_type == 'average':
+            mask = np.ones((3, 3), dtype=np.float32) / 9.0  # 3x3 mask for averaging
+        elif mask_type == 'weighted':
+            mask = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]], dtype=np.float32) / 16.0  # 3x3 weighted mask
+        elif mask_type == 'gaussian':
+            mask = cv2.getGaussianKernel(3, 0) @ cv2.getGaussianKernel(3, 0).T  # Example Gaussian mask
+
+        smoothed_image = cv2.filter2D(image, -1, mask, borderType=cv2.BORDER_CONSTANT)
+
+        return smoothed_image
 
 class App:
     @staticmethod
