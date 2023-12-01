@@ -253,7 +253,7 @@ class HistogramWindow:
         self.hist_window = tk.Toplevel(parent.tkWindow)
         self.create_histogram()
 
-        super().__init__(self.hist_window, parent)
+        #super().__init__(self.hist_window, parent)
 
     def create_histogram(self):
         result = self.histogram.calculate_histogram()
@@ -398,9 +398,17 @@ class ImageWindow(Window):
         menu_button = tk.Menubutton(top_panel, text="Lab4", underline=0, padx=5)
         menu_button.pack(side=tk.LEFT)
 
-        # Create a menu
         menu = tk.Menu(menu_button, tearoff=0)
         menu_button.configure(menu=menu)
+
+        menu.add_command(label="Smooth Image average", command=lambda: self.show_smooth_image_opencv('average'))
+        menu.add_command(label="Smooth Image weighted", command=lambda: self.show_smooth_image_opencv('weighted'))
+        menu.add_command(label="Smooth Image gaussian", command=lambda: self.show_smooth_image_opencv('gaussian'))
+        menu.add_command(label="Sharp Image ", command=lambda: self.show_sharp_image_opencv)
+        menu.add_command(label="sobel", command=lambda: self.apply_edge_detection)
+        menu.add_command(label="ass", command=lambda: self.apply_median_filter)
+
+
 
 
     def open_new_image(self):
@@ -576,6 +584,77 @@ class ImageWindow(Window):
             result_image = binary.logical_xor(Binary(image1))
             self.update_image(result_image)
 
+#Lab 4
+    def show_smooth_image_opencv(self, mask_type='average'):
+        image_cv = np.array(self.image)
+
+        if mask_type == 'average':
+            kernel = np.ones((3, 3), dtype=np.float32) / 9.0
+        elif mask_type == 'weighted':
+            kernel = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]], dtype=np.float32) / 16.0
+        elif mask_type == 'gaussian':
+            kernel = cv2.getGaussianKernel(3, 0) @ cv2.getGaussianKernel(3, 0).T
+
+        smoothed_image_cv = cv2.filter2D(image_cv, -1, kernel)
+        smoothed_image = Image.fromarray(smoothed_image_cv)
+
+        self.update_image(smoothed_image)
+
+
+
+    def show_sharp_image_opencv(self):
+        masks = [
+            [[0, -1, 0], [-1, 4, -1], [0, -1, 0]],
+            [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]],
+            [[1, -2, 1], [-2, 4, -2], [1, -2, 1]]
+
+        ]
+        user_choise = simpledialog.askinteger("Maska", "wybierz od 1 do 3")
+        i = user_choise - 1
+        neighbour = Neighbour(self.image)
+        if 0 <= i < len(masks):
+            image = neighbour.linear_sharpening(mask=masks[i])
+            self.update_image(image)
+
+    def apply_edge_detection(image, method, edge_type='sobel'):
+        if edge_type == 'sobel':
+            scale = 1
+            delta = 0
+            ddepth = cv2.CV_16S
+            if method == 'horizontal':
+                grad = cv2.Sobel(image, ddepth, 1, 0, ksize=3, scale=scale, delta=delta, borderType=cv2.BORDER_DEFAULT)
+            elif method == 'vertical':
+                grad = cv2.Sobel(image, ddepth, 0, 1, ksize=3, scale=scale, delta=delta, borderType=cv2.BORDER_DEFAULT)
+            else:
+                raise ValueError("Unknown edge detection method")
+            abs_grad = cv2.convertScaleAbs(grad)
+            return abs_grad
+        elif edge_type == 'prewitt':
+            # Prewitt implementation can be added here
+            kernelX = np.array([[1, 0, -1], [1, 0, -1], [1, 0, -1]], np.float32)
+            kernelY = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]], np.float32)
+            if method == 'horizontal':
+                grad = cv2.filter2D(image, -1, kernelX)
+            elif method == 'vertical':
+                grad = cv2.filter2D(image, -1, kernelY)
+        else:
+            raise ValueError("Unknown edge detection type")
+
+    def apply_median_filter(image, kernel_size, border_type):
+        if border_type == 'constant':
+            border = cv2.BORDER_CONSTANT
+        elif border_type == 'reflect':
+            border = cv2.BORDER_REFLECT
+        elif border_type == 'wrap':
+            border = cv2.BORDER_WRAP
+        else:
+            raise ValueError("Unknown border type")
+        return cv2.medianBlur(image, kernel_size)
+
+
+
+
+
 class LutWindow:
     def __init__(self, image, path, parent):
         self.image = image
@@ -583,7 +662,7 @@ class LutWindow:
         self.histogram = Histogram(image)
         hist_window = self.show_LUT(parent.tkWindow)
 
-        super().__init__(hist_window, parent)
+        #super().__init__(hist_window, parent)
 
     def show_LUT(self, parent_window):
         lut_window = tk.Toplevel(parent_window)
@@ -603,11 +682,11 @@ class LutWindow:
             self.print_LUT_channel(g, lut_list, "Green")
             self.print_LUT_channel(b, lut_list, "Blue")
 
-        lut_scroll = tk.Scrollbar(lut_window, orient="Horizontal")
-        lut_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        #lut_scroll = tk.Scrollbar(lut_window, orient="Horizontal")
+        #lut_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        lut_list.config(yscrollcommand=lut_scroll.set)
-        lut_scroll.config(command=lut_list.yview)
+        #lut_list.config(yscrollcommand=lut_scroll.set)
+        #lut_scroll.config(command=lut_list.yview)
 
         return lut_window
 
@@ -777,18 +856,18 @@ class MainWindow(Window):
             image_window = ImageWindow(path=file_path, image=Image.open(file_path), parent=self)
             self.add_child(image_window)
 
-class openCV():
-    def smooth_image(image, mask_type='average'):
-        if mask_type == 'average':
-            mask = np.ones((3, 3), dtype=np.float32) / 9.0  # 3x3 mask for averaging
-        elif mask_type == 'weighted':
-            mask = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]], dtype=np.float32) / 16.0  # 3x3 weighted mask
-        elif mask_type == 'gaussian':
-            mask = cv2.getGaussianKernel(3, 0) @ cv2.getGaussianKernel(3, 0).T  # Example Gaussian mask
+class openCV:
+    def sharp_image_opencv(self, mask):
+        image_array = np.array(self.image)
+        if len(image_array.shape) == 3:
+            image_array = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
 
-        smoothed_image = cv2.filter2D(image, -1, mask, borderType=cv2.BORDER_CONSTANT)
+        custom_filter = np.array(mask, dtype=np.float32)
+        sharpened = cv2.filter2D(image_array, -1, custom_filter)
+        sharpened = np.uint8(np.absolute(sharpened))
+        sharpened_image = cv2.addWeighted(image_array, 1.5, sharpened, -0.5, 0)
+        return Image.fromarray(sharpened_image)
 
-        return smoothed_image
 
 class App:
     @staticmethod
