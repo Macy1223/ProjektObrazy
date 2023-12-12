@@ -370,11 +370,11 @@ class ImageWindow(Window):
         menu.add_command(label="Rozciąganie Liniowe", command=self.show_linear_stretch)
         menu.add_command(label="Rozciąganie Nieliniowe (Funkcja gamma)", command=self.show_nonlinear_stretch)
         menu.add_command(label="Equalizacja", command=self.show_equalization)
-        menu.add_command(label="Rozciąganie Histogramu", command=self.show_histogram_stretching)
         menu.add_command(label="Negacja", command=self.show_negation)
-        menu.add_command(label="Progowanie Binarne", command=self.show_threshold)
         menu.add_command(label="Redukcja poziomów szarości", command=self.show_reduce_grayscale)
-        menu.add_command(label="Rozciąganie Histogramu z zakresem p1-p2 do q3-q4", command=self.show_threshold_preserve)
+        menu.add_command(label="Progowanie Binarne", command=self.show_threshold)
+        menu.add_command(label="Progowanie z zachowanie poziomów szarości", command=self.show_threshold_preserve)
+        menu.add_command(label="Rozciąganie Histogramu z zakresem p1-p2 do q3-q4", command=self.show_histogram_stretching)
 
         menu_button = tk.Menubutton(top_panel, text="Lab3", underline=0, padx=5)
         menu_button.pack(side=tk.LEFT)
@@ -407,6 +407,20 @@ class ImageWindow(Window):
         menu.add_command(label="Sharp Image Maska1", command=lambda: self.show_sharp_image('Pierwsza'))
         menu.add_command(label="Smooth Image Maska2", command=lambda: self.show_sharp_image('Druga'))
         menu.add_command(label="Smooth Image Maska3", command=lambda: self.show_sharp_image('Trzecia'))
+        menu.add_command(label="Sobel Directional E", command=lambda: self.show_sobel_directional('E'))
+        menu.add_command(label="Sobel Directional SE", command=lambda: self.show_sobel_directional('SE'))
+        menu.add_command(label="Sobel Directional S", command=lambda: self.show_sobel_directional('S'))
+        menu.add_command(label="Sobel Directional WS", command=lambda: self.show_sobel_directional('WS'))
+        menu.add_command(label="Sobel Directional W", command=lambda: self.show_sobel_directional('W'))
+        menu.add_command(label="Sobel Directional WN", command=lambda: self.show_sobel_directional('WN'))
+        menu.add_command(label="Sobel Directional N", command=lambda: self.show_sobel_directional('N'))
+        menu.add_command(label="Sobel Directional NE", command=lambda: self.show_sobel_directional('NE'))
+        menu.add_command(label="Sobel", command=lambda: self.show_sobel())
+        menu.add_command(label="Prewwit", command=lambda: self.show_prewwit())
+        menu.add_command(label="User Border Constant", command=lambda: self.show_user_border_const())
+        menu.add_command(label="User Border Replicate", command=lambda: self.show_user_border_replicate())
+        menu.add_command(label="Border Reflect", command=lambda: self.show_border_reflect())
+        menu.add_command(label="Border Wrap", command=lambda: self.show_border_wrap())
 
 
         menu_button = tk.Menubutton(top_panel, text="Lab5", underline=0, padx=5)
@@ -419,14 +433,7 @@ class ImageWindow(Window):
         menu.add_command(label="Segmentacja z dwoma progami", command=lambda: self.show_segment_image_with_input())
         menu.add_command(label="Segmentacja metodą Otsu", command=lambda: self.show_segment_image_otsu())
         menu.add_command(label="Segmentacja metodą adaptacyjną", command=lambda: self.show_adaptive_thresholding())
-    def open_new_image(self):
-        file_path = filedialog.askopenfilename()
-
-        if file_path:
-            self.image_path = file_path
-            image = Image.open(file_path)
-            self.update_image(image)
-
+#Lab 1
     def show_histogram(self):
         hist_window = HistogramWindow(parent=self, path=self.image_path, image=self.image)
         self.add_child(hist_window)
@@ -455,7 +462,7 @@ class ImageWindow(Window):
 
     def close(self):
         self.image_window.destroy()
-
+#Lab 2
     def show_linear_stretch(self):
         histogram = Histogram(self.image)
         image = histogram.linear_histogram_stretching()
@@ -622,15 +629,99 @@ class ImageWindow(Window):
         sharp_image = Image.fromarray(sharp_image_cv)
 
         self.update_image(sharp_image)
-    
-    
+
+    def show_sobel_directional(self, mask_type='E'):
+        image_cv =np.array(self.image)
+
+        if mask_type == 'E':
+            sobel = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]], dtype=np.float32) / 8.0
+        elif mask_type == 'SE':
+            sobel = np.array([[2, 1, 0], [1, 0, -1], [0, -1, -2]], dtype=np.float32) / 8.0
+        elif mask_type == 'S':
+            sobel = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]], dtype=np.float32) / 8.0
+        elif mask_type == 'WS':
+            sobel = np.array([[0, 1, 2], [-1, 0, 1], [-2, -1, 0]], dtype=np.float32) / 8.0
+        elif mask_type == 'W':
+            sobel = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=np.float32) / 8.0
+        elif mask_type == 'WN':
+            sobel = np.array([[-2, -1, 0], [-1, 0, 1], [0, 1, 2]], dtype=np.float32) / 8.0
+        elif mask_type == 'N':
+            sobel = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=np.float32) / 8.0
+        elif mask_type == 'NE':
+            sobel = np.array([[0, -1, -2], [1, 0, -1], [2, 1, 0]], dtype=np.float32) / 8.0
+
+        sobel_image_cv = cv2.filter2D(image_cv, -1, sobel)
+        sobel_image = Image.fromarray(sobel_image_cv)
+
+        self.update_image(sobel_image)
+
+    def show_sobel(self):
+        image_cv = np.array(self.image)
+
+        sobel_x = cv2.Sobel(image_cv, 6, 1, 0, ksize=3)
+        sobel_y = cv2.Sobel(image_cv, 6, 0, 1, ksize=3)
+
+        sobel_image_cv = cv2.addWeighted(sobel_x, 0.5, sobel_y, 0.5, 0)
+        sobel_image = Image.fromarray(sobel_image_cv)
+
+        self.update_image(sobel_image)
+
+    def show_prewwit(self):
+        image_cv = np.array(self.image)
+
+        prewit_x = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]], dtype=np.float32) / 6.0
+        prewit_y = np.array([[-1, -1, -1],[0, 0, 0], [1, 1, 1]], dtype=np.float32) / 6.0
+
+        prewit_image_cv = cv2.addWeighted(cv2.filter2D(image_cv, -1, prewit_x), 0.5, cv2.filter2D(image_cv, -1, prewit_y), 0.5, 0)
+        prewit_image = Image.fromarray(prewit_image_cv)
+
+        self.update_image(prewit_image)
+
+    def show_user_border_const(self):
+        image_cv = np.array(self.image)
+
+        border = simpledialog.askinteger("Border", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+
+        border_image_cv = cv2.copyMakeBorder(image_cv, border, border, border, border, cv2.BORDER_CONSTANT, value=[255, 255, 255])
+        border_image = Image.fromarray(border_image_cv)
+
+        self.update_image(border_image)
+
+    def show_user_border_replicate(self):
+        image_cv = np.array(self.image)
+
+        border = simpledialog.askinteger("Border", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+
+        border_image_cv = cv2.copyMakeBorder(image_cv, border, border, border, border, cv2.BORDER_REPLICATE)
+        border_image = Image.fromarray(border_image_cv)
+
+        self.update_image(border_image)
+
+    def show_border_reflect(self):
+        image_cv = np.array(self.image)
+
+        border = simpledialog.askinteger("Border", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+
+        border_image_cv = cv2.copyMakeBorder(image_cv, border, border, border, border, cv2.BORDER_REFLECT)
+        border_image = Image.fromarray(border_image_cv)
+
+        self.update_image(border_image)
+
+    def show_border_wrap(self):
+        image_cv = np.array(self.image)
+        border = simpledialog.askinteger("Border", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+        border_image_cv = cv2.copyMakeBorder(image_cv, border, border, border, border, cv2.BORDER_WRAP)
+        border_image = Image.fromarray(border_image_cv)
+
+        self.update_image(border_image)
+
 
 #Lab 5
 
     def show_canny_edge_detection(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        threshold1 = 100
-        threshold2 = 200
+        threshold1 = simpledialog.askfloat("Progowanie", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+        threshold2 = simpledialog.askfloat("Progowanie", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
         cv2.waitKey(0)
 
         canned_image_cv = cv2.Canny(image, threshold1, threshold2)
