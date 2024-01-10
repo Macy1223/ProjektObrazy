@@ -130,20 +130,18 @@ class Histogram:
 
     def linear_histogram_stretching(self):
         pixel_values = list(self.image.getdata())
-        if self.is_gray_scale:  # Check if the image is in grayscale mode
-            # Get the pixel values as a list
-
+        if self.is_gray_scale:
             stretched_values = self.linear_stretch_channel(pixel_values)
 
-            # Create a new image with the stretched values
+
             stretched_image = Image.new('L', self.image.size)
             stretched_image.putdata(stretched_values)
             return stretched_image
         else:
-            # Separate the pixel values into individual color channels
+
             red_channel, green_channel, blue_channel = zip(*pixel_values)
 
-            # Perform linear histogram stretching for each color channel
+
             stretched_red = self.linear_stretch_channel(red_channel)
             stretched_green = self.linear_stretch_channel(green_channel)
             stretched_blue = self.linear_stretch_channel(blue_channel)
@@ -154,7 +152,7 @@ class Histogram:
             stretched_blue_image = Image.new('L', self.image.size)
             stretched_blue_image.putdata(stretched_blue)
 
-            # Combine the stretched color channels into a new image
+
             stretched_image = Image.merge('RGB', (stretched_red_image, stretched_green_image, stretched_blue_image))
             return stretched_image
 
@@ -606,7 +604,8 @@ class ImageWindow(Window):
         if mask_type == 'average':
             kernel = np.ones((3, 3), dtype=np.float32) / 9.0
         elif mask_type == 'weighted':
-            kernel = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]], dtype=np.float32) / 16.0
+            user_input = simpledialog.askinteger("Ważona", "Podaj wartość K:", minvalue=0, maxvalue=9)
+            kernel = np.array([[1, 2, 1], [2, user_input, 2], [1, 2, 1]], dtype=np.float32) / 8 + user_input
         elif mask_type == 'gaussian':
             kernel = cv2.getGaussianKernel(3, 0) @ cv2.getGaussianKernel(3, 0).T
 
@@ -623,7 +622,7 @@ class ImageWindow(Window):
         elif mask_type == 'Druga':
             kernel = np.array([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]], dtype=np.float32) / 16.0
         elif mask_type == 'Trzecia':
-            kernel = np.array([[1, -2, 1], [-2, 4, -2], [1, -2, 1]], dtype=np.float32) / 8.0
+            kernel = np.array([[1, -2, 1], [-2, 4, -2], [1, -2, 1]], dtype=np.float32) / 4
 
         sharp_image_cv = cv2.filter2D(image_cv, -1, kernel)
         sharp_image = Image.fromarray(sharp_image_cv)
@@ -697,12 +696,12 @@ class ImageWindow(Window):
 
         self.update_image(border_image)
 
-    def show_border_reflect(self):
+    def show_border_reflect(self, border=None):
         image_cv = np.array(self.image)
 
-        border = simpledialog.askinteger("Border", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+        
 
-        border_image_cv = cv2.copyMakeBorder(image_cv, border, border, border, border, cv2.BORDER_REFLECT)
+        border_image_cv = cv2.copyMakeBorder(image_cv, border, cv2.BORDER_REFLECT)
         border_image = Image.fromarray(border_image_cv)
 
         self.update_image(border_image)
@@ -722,7 +721,6 @@ class ImageWindow(Window):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
         threshold1 = simpledialog.askfloat("Progowanie", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
         threshold2 = simpledialog.askfloat("Progowanie", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
-        cv2.waitKey(0)
 
         canned_image_cv = cv2.Canny(image, threshold1, threshold2)
         canned_image = Image.fromarray(canned_image_cv)
@@ -730,36 +728,36 @@ class ImageWindow(Window):
         self.update_image(canned_image)
 
     def show_segment_image_with_input(self):
-        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        threshold1 = simpledialog.askfloat("Progowanie", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
-        threshold2 = simpledialog.askfloat("Progowanie", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+        image_array = np.array(self.image)
+        lower_thresh = simpledialog.askfloat("Progowanie", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+        ret_low, lower = cv2.threshold(image_array, lower_thresh, 255, cv2.THRESH_BINARY)
+        upper_thresh = simpledialog.askfloat("Progowanie", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+        ret_up, upper = cv2.threshold(image_array, upper_thresh, 255, cv2.THRESH_BINARY_INV)
+        combined = cv2.bitwise_and(lower, upper)
 
-        _, segmented_image = cv2.threshold(image, threshold1, 255, cv2.THRESH_BINARY)
-        _, segmented_image = cv2.threshold(segmented_image, threshold2, 255, cv2.THRESH_BINARY_INV)
-
-        segmented_image_cv = cv2.threshold(image, threshold1 + 1, threshold2 + 1, cv2.THRESH_BINARY)[1]
-        segmented_image = Image.fromarray(segmented_image_cv)
-
-        self.update_image(segmented_image)
+        self.update_image(Image.fromarray(combined))
 
     def show_segment_image_otsu(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
         _, thresholded_image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        otsu_threshold_value = _
 
         segmented_image_otsu_cv = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
         segmented_image_otsu = Image.fromarray(segmented_image_otsu_cv)
 
         self.update_image(segmented_image_otsu)
+        rootWindow = Tk()
+        rootWindow.title(otsu_threshold_value)
+        rootWindow.geometry("200x10")
 
     def show_adaptive_thresholding(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        block_size = simpledialog.askinteger("Block Size", "Wybierz wartość progowania:", minvalue=1, maxvalue=25)
-        constant_c = simpledialog.askinteger("Constant_c", "Wybierz wartość progowania:", minvalue=1, maxvalue=10)
+        thresholded_image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
 
-        adaptive_thresh_cv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, block_size, constant_c)
-        adaptive_thresh = Image.fromarray(adaptive_thresh_cv)
+        segmented_image_adaptive_cv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+        segmented_image_adaptive = Image.fromarray(segmented_image_adaptive_cv)
 
-        self.update_image(adaptive_thresh)
+        self.update_image(segmented_image_adaptive)
 
 class LutWindow:
     def __init__(self, image, path, parent):
