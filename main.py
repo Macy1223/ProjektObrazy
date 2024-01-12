@@ -30,6 +30,7 @@ class Window:
         else:
             return False
 
+
 class Binary:
     def __init__(self, image):
         self.image = image
@@ -64,7 +65,7 @@ class Binary:
         image = self.image if self.image.mode == "L" else self.image.convert("L")
         return image
 
-# LAB3
+    # LAB3
     def logical_not(self):
         image = self.preprocess_image()
         pixel_values = list(image.getdata())
@@ -110,12 +111,12 @@ class Binary:
         xor_image = Image.fromarray(xor_array)
         return xor_image
 
+
 class Histogram:
     def __init__(self, image):
         self.image = image
         unique_colors = set(self.image.getdata())
         self.is_gray_scale = True if len(unique_colors) <= 256 else False
-
 
     def calculate_histogram(self):
         if self.is_gray_scale:
@@ -133,14 +134,12 @@ class Histogram:
         if self.is_gray_scale:
             stretched_values = self.linear_stretch_channel(pixel_values)
 
-
             stretched_image = Image.new('L', self.image.size)
             stretched_image.putdata(stretched_values)
             return stretched_image
         else:
 
             red_channel, green_channel, blue_channel = zip(*pixel_values)
-
 
             stretched_red = self.linear_stretch_channel(red_channel)
             stretched_green = self.linear_stretch_channel(green_channel)
@@ -152,15 +151,14 @@ class Histogram:
             stretched_blue_image = Image.new('L', self.image.size)
             stretched_blue_image.putdata(stretched_blue)
 
-
             stretched_image = Image.merge('RGB', (stretched_red_image, stretched_green_image, stretched_blue_image))
             return stretched_image
 
     def linear_stretch_channel(self, channel):
-            min_value = min(channel)
-            max_value = max(channel)
-            stretched_values = [int((pixel - min_value) / (max_value - min_value) * 255) for pixel in channel]
-            return stretched_values
+        min_value = min(channel)
+        max_value = max(channel)
+        stretched_values = [int((pixel - min_value) / (max_value - min_value) * 255) for pixel in channel]
+        return stretched_values
 
     def nonlinear_stretch_image(self, gamma, sat=False):
         img_data = np.array(self.image, dtype=np.float32)
@@ -251,7 +249,7 @@ class HistogramWindow:
         self.hist_window = tk.Toplevel(parent.tkWindow)
         self.create_histogram()
 
-        #super().__init__(self.hist_window, parent)
+        # super().__init__(self.hist_window, parent)
 
     def create_histogram(self):
         result = self.histogram.calculate_histogram()
@@ -336,26 +334,22 @@ class ImageWindow(Window):
         self.image_label.pack(fill=tk.BOTH, expand=True)
 
         super().__init__(self.image_window, parent)
+
     def create_menu(self):
 
         top_panel = tk.Frame(self.image_window, height=50, width=400)
         top_panel.pack(fill=tk.BOTH)
 
-
         menu_button = tk.Menubutton(top_panel, text="Lab1", underline=0, padx=5)
         menu_button.pack(side=tk.LEFT)
 
-
         menu = tk.Menu(menu_button, tearoff=0)
         menu_button.configure(menu=menu)
-
 
         menu.add_command(label="Zapisz obraz", command=self.save_image)
         menu.add_command(label="Duplikuj", command=self.duplicate_image)
         menu.add_command(label="Pokaż Histogram", command=self.show_histogram)
         menu.add_command(label="Pokaż LUT", command=self.show_lut_table)
-
-
 
         menu_button = tk.Menubutton(top_panel, text="Lab2", underline=0, padx=5)
         menu_button.pack(side=tk.LEFT)
@@ -372,7 +366,8 @@ class ImageWindow(Window):
         menu.add_command(label="Redukcja poziomów szarości", command=self.show_reduce_grayscale)
         menu.add_command(label="Progowanie Binarne", command=self.show_threshold)
         menu.add_command(label="Progowanie z zachowanie poziomów szarości", command=self.show_threshold_preserve)
-        menu.add_command(label="Rozciąganie Histogramu z zakresem p1-p2 do q3-q4", command=self.show_histogram_stretching)
+        menu.add_command(label="Rozciąganie Histogramu z zakresem p1-p2 do q3-q4",
+                         command=self.show_histogram_stretching)
 
         menu_button = tk.Menubutton(top_panel, text="Lab3", underline=0, padx=5)
         menu_button.pack(side=tk.LEFT)
@@ -420,7 +415,6 @@ class ImageWindow(Window):
         menu.add_command(label="Border Reflect", command=lambda: self.show_border_reflect())
         menu.add_command(label="Border Wrap", command=lambda: self.show_border_wrap())
 
-
         menu_button = tk.Menubutton(top_panel, text="Lab5", underline=0, padx=5)
         menu_button.pack(side=tk.LEFT)
 
@@ -431,7 +425,20 @@ class ImageWindow(Window):
         menu.add_command(label="Segmentacja z dwoma progami", command=lambda: self.show_segment_image_with_input())
         menu.add_command(label="Segmentacja metodą Otsu", command=lambda: self.show_segment_image_otsu())
         menu.add_command(label="Segmentacja metodą adaptacyjną", command=lambda: self.show_adaptive_thresholding())
-#Lab 1
+
+        menu_button = tk.Menubutton(top_panel, text="Lab6", underline=0, padx=5)
+        menu_button.pack(side=tk.LEFT)
+
+        menu = tk.Menu(menu_button, tearoff=0)
+        menu_button.configure(menu=menu)
+        menu.add_command(label="Erozja", command=lambda: self.show_erode())
+        menu.add_command(label="Dylacja", command=lambda: self.show_dilate())
+        menu.add_command(label="Open", command=lambda: self.show_opening())
+        menu.add_command(label="Close", command=lambda: self.show_closing())
+        menu.add_command(label="Momenty", command=lambda: self.show_binary_moments())
+
+
+    # Lab 1
     def show_histogram(self):
         hist_window = HistogramWindow(parent=self, path=self.image_path, image=self.image)
         self.add_child(hist_window)
@@ -460,7 +467,8 @@ class ImageWindow(Window):
 
     def close(self):
         self.image_window.destroy()
-#Lab 2
+
+    # Lab 2
     def show_linear_stretch(self):
         histogram = Histogram(self.image)
         image = histogram.linear_histogram_stretching()
@@ -482,19 +490,23 @@ class ImageWindow(Window):
 
     def show_histogram_stretching(self):
         histogram = Histogram(self.image)
-        p1 = simpledialog.askfloat("Rozciąganie histogramu", "Wybierz wartość p1 od 0 do 255:", minvalue=0, maxvalue=255)
+        p1 = simpledialog.askfloat("Rozciąganie histogramu", "Wybierz wartość p1 od 0 do 255:", minvalue=0,
+                                   maxvalue=255)
         if p1 is None:
             return
 
-        p2 = simpledialog.askfloat("Rozciąganie histogramu", "Wybierz wartość p2 od 0 do 255:", minvalue=0, maxvalue=255)
+        p2 = simpledialog.askfloat("Rozciąganie histogramu", "Wybierz wartość p2 od 0 do 255:", minvalue=0,
+                                   maxvalue=255)
         if p2 is None:
             return
 
-        q3 = simpledialog.askfloat("Rozciąganie histogramu", "Wybierz wartość q3 od 0 do 255:", minvalue=0, maxvalue=255)
+        q3 = simpledialog.askfloat("Rozciąganie histogramu", "Wybierz wartość q3 od 0 do 255:", minvalue=0,
+                                   maxvalue=255)
         if q3 is None:
             return
 
-        q4 = simpledialog.askfloat("Rozciąganie histogramu", "Wybierz wartość q4 od 0 do 255:", minvalue=0, maxvalue=255)
+        q4 = simpledialog.askfloat("Rozciąganie histogramu", "Wybierz wartość q4 od 0 do 255:", minvalue=0,
+                                   maxvalue=255)
         if q4 is None:
             return
 
@@ -525,7 +537,7 @@ class ImageWindow(Window):
         image = binary.reduce_grayscale_levels(levels)
         self.update_image(image)
 
-#Lab 3
+    # Lab 3
     def show_add_image(self):
         file_path = filedialog.askopenfilename()
 
@@ -550,6 +562,7 @@ class ImageWindow(Window):
         value = simpledialog.askfloat("Dodaj", "Wybierz wartość:", minvalue=1, maxvalue=255)
         image = multi.operate_on_image(value, "+")
         self.update_image(image)
+
     def show_subtract(self):
         multi = Multi(self.image)
         value = simpledialog.askfloat("Odejmowanie", "Wybierz wartość:", minvalue=1, maxvalue=255)
@@ -597,7 +610,7 @@ class ImageWindow(Window):
             result_image = binary.logical_xor(Binary(image1))
             self.update_image(result_image)
 
-#Lab 4
+    # Lab 4
     def show_smooth_image_opencv(self, mask_type='average'):
         image_cv = np.array(self.image)
 
@@ -630,7 +643,7 @@ class ImageWindow(Window):
         self.update_image(sharp_image)
 
     def show_sobel_directional(self, mask_type='E'):
-        image_cv =np.array(self.image)
+        image_cv = np.array(self.image)
 
         if mask_type == 'E':
             sobel = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]], dtype=np.float32) / 8.0
@@ -669,9 +682,10 @@ class ImageWindow(Window):
         image_cv = np.array(self.image)
 
         prewit_x = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]], dtype=np.float32) / 6.0
-        prewit_y = np.array([[-1, -1, -1],[0, 0, 0], [1, 1, 1]], dtype=np.float32) / 6.0
+        prewit_y = np.array([[-1, -1, -1], [0, 0, 0], [1, 1, 1]], dtype=np.float32) / 6.0
 
-        prewit_image_cv = cv2.addWeighted(cv2.filter2D(image_cv, -1, prewit_x), 0.5, cv2.filter2D(image_cv, -1, prewit_y), 0.5, 0)
+        prewit_image_cv = cv2.addWeighted(cv2.filter2D(image_cv, -1, prewit_x), 0.5,
+                                          cv2.filter2D(image_cv, -1, prewit_y), 0.5, 0)
         prewit_image = Image.fromarray(prewit_image_cv)
 
         self.update_image(prewit_image)
@@ -681,7 +695,8 @@ class ImageWindow(Window):
 
         border = simpledialog.askinteger("Border", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
 
-        border_image_cv = cv2.copyMakeBorder(image_cv, border, border, border, border, cv2.BORDER_CONSTANT, value=[255, 255, 255])
+        border_image_cv = cv2.copyMakeBorder(image_cv, border, border, border, border, cv2.BORDER_CONSTANT,
+                                             value=[255, 255, 255])
         border_image = Image.fromarray(border_image_cv)
 
         self.update_image(border_image)
@@ -699,8 +714,6 @@ class ImageWindow(Window):
     def show_border_reflect(self, border=None):
         image_cv = np.array(self.image)
 
-        
-
         border_image_cv = cv2.copyMakeBorder(image_cv, border, cv2.BORDER_REFLECT)
         border_image = Image.fromarray(border_image_cv)
 
@@ -714,8 +727,7 @@ class ImageWindow(Window):
 
         self.update_image(border_image)
 
-
-#Lab 5
+    # Lab 5
 
     def show_canny_edge_detection(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
@@ -754,10 +766,60 @@ class ImageWindow(Window):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
         thresholded_image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
 
-        segmented_image_adaptive_cv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+        segmented_image_adaptive_cv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,
+                                                            11, 2)
         segmented_image_adaptive = Image.fromarray(segmented_image_adaptive_cv)
 
         self.update_image(segmented_image_adaptive)
+
+#Lab 6
+    def show_erode(self):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        kernel = np.ones((3, 3), np.uint8)
+        erode = cv2.erode(image, kernel, iterations=1)
+        erode_image = Image.fromarray(erode)
+
+        self.update_image(erode_image)
+
+    def show_dilate(self):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        kernel = np.ones((3, 3), np.uint8)
+        dilate = cv2.dilate(image, kernel, iterations=1)
+        dilate_image = Image.fromarray(dilate)
+
+        self.update_image(dilate_image)
+
+    def show_opening(self):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        kernel = np.ones((3, 3), np.uint8)
+        opening = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel)
+        opening_image = Image.fromarray(opening)
+
+        self.update_image(opening_image)
+
+    def show_closing(self):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        kernel = np.ones((3, 3), np.uint8)
+        closing = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)
+        closing_image = Image.fromarray(closing)
+
+        self.update_image(closing_image)
+
+    def show_binary_moments(self, label):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        ret, thresh = cv2.threshold(image, 127, 255, 0)
+        contours, hierarchy = cv2.findContours(thresh, 1, 2)
+        cnt = contours[0]
+        M = cv2.moments(cnt)
+        rootWindow = Tk()
+        rootWindow.title("Momenty")
+        rootWindow.geometry("200x10")
+        label = Label(rootWindow, text=M)
+        label.pack(pady=40)
+
+
+        self.update_image(self.image)
+
 
 class LutWindow:
     def __init__(self, image, path, parent):
@@ -863,6 +925,7 @@ class Multi:
         new_image.putdata(new_pixel_values)
         return new_image
 
+
 def update_image(self, image):
     self.image = image
     self.photo = ImageTk.PhotoImage(self.image)
@@ -951,6 +1014,7 @@ class MainWindow(Window):
         if file_path:
             image_window = ImageWindow(path=file_path, image=Image.open(file_path), parent=self)
             self.add_child(image_window)
+
 
 class App:
     @staticmethod
