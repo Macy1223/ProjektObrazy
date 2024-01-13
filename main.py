@@ -814,11 +814,13 @@ class ImageWindow(Window):
         rootWindow = Tk()
         rootWindow.title("Momenty")
         rootWindow.geometry("200x10")
-        label = Label(rootWindow, text=M)
+        label = tk.Label(rootWindow, text=M)
         label.pack(pady=40)
 
 
         self.update_image(self.image)
+
+    #Is working ?
 
 
 class LutWindow:
