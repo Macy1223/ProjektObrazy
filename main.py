@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import Tk, Frame, Button, filedialog
 from tkinter import simpledialog
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageChops, ImageStat
 import numpy as np
 import os
 from tkinter import messagebox
@@ -436,6 +436,13 @@ class ImageWindow(Window):
         menu.add_command(label="Open", command=lambda: self.show_opening())
         menu.add_command(label="Close", command=lambda: self.show_closing())
         menu.add_command(label="Momenty", command=lambda: self.show_binary_moments())
+        menu.add_command(label="Pole powierzchni", command=lambda: self.show_surface_area())
+        menu.add_command(label="Obwód", command=lambda: self.show_circiut())
+        menu.add_command(label="AspectRatio (Współczynnik proporcji)", command=lambda: self.show_aspect_ratio())
+        menu.add_command(label="Extent (Stopień wypełnienia)", command=lambda: self.show_extent())
+        menu.add_command(label="Solidity (Stożkowatość)", command=lambda: self.show_Solidity())
+        menu.add_command(label="Equivalent Diameter (Średnica równoważna)", command=lambda: self.show_equivalent_diameter())
+        menu.add_command(label="Exportuj do txt", command=lambda: self.show_export_data_to_txt())
 
 
     # Lab 1
@@ -805,22 +812,119 @@ class ImageWindow(Window):
 
         self.update_image(closing_image)
 
-    def show_binary_moments(self, label):
+
+
+    def show_binary_moments(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
         ret, thresh = cv2.threshold(image, 127, 255, 0)
         contours, hierarchy = cv2.findContours(thresh, 1, 2)
         cnt = contours[0]
         M = cv2.moments(cnt)
-        rootWindow = Tk()
-        rootWindow.title("Momenty")
-        rootWindow.geometry("200x10")
-        label = tk.Label(rootWindow, text=M)
-        label.pack(pady=40)
 
+        print(M)
+        return str(M)
 
-        self.update_image(self.image)
+    def show_surface_area(self):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        _, binary_image = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    #Is working ?
+        area = 0
+        for contour in contours:
+            area += cv2.contourArea(contour)
+
+        print(area)
+        return str(area)
+
+    def show_circiut(self):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        _, binary_image = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        biggest_contour = max(contours, key=cv2.contourArea)
+        perimeter = cv2.arcLength(biggest_contour, True)
+        circiut = cv2.arcLength(biggest_contour, True)
+
+        print(circiut)
+        return str(circiut)
+
+    def show_aspect_ratio(self):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        _, binary_image = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        area = 0
+        for contour in contours:
+            area += cv2.contourArea(contour)
+        total_pixels = image.shape[0] * image.shape[1]
+        aspect_ratio = area / total_pixels
+
+        print(round(aspect_ratio, 2))
+        return str(round(aspect_ratio, 2))
+
+    def show_extent(self):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        _, binary_image = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        area = 0
+        for contour in contours:
+            area += cv2.contourArea(contour)
+        total_pixels = image.shape[0] * image.shape[1]
+        extent = area / total_pixels
+        extent = round(extent, 2)
+        extent_percentage = round(extent * 100)
+
+        print(extent_percentage, "%")
+        return f"{extent_percentage}%"
+
+    def show_Solidity(self):
+        gray_image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        pil_gray_image = Image.fromarray(gray_image)
+        white_image = Image.new('L', pil_gray_image.size, 255)
+        diff_image = ImageChops.difference(pil_gray_image, white_image)
+        stat = ImageStat.Stat(diff_image)
+        mean_diff = stat.mean[0]
+        solidity_value = 1.0 - (mean_diff / 255.0)
+        solidity_value_percentage = round(solidity_value * 100)
+
+        print(round(solidity_value_percentage, 2), "%")
+        return f"{round(solidity_value_percentage, 2)}%"
+
+    def show_equivalent_diameter(self):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        _, binary_image = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        area = 0
+        for contour in contours:
+            area += cv2.contourArea(contour)
+
+        equivalent_diameter = np.sqrt(4 * area / np.pi)
+
+        print(round(equivalent_diameter, 2))
+        return round(equivalent_diameter, 2)
+
+    def show_export_data_to_txt(self):
+        # Użytkownik wybiera miejsce zapisu pliku
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+            initialfile="Data_LAB6.txt",
+            title="Wybierz miejsce do zapisu pliku"
+        )
+
+        if file_path:
+            try:
+                with open(file_path, 'w') as file:
+                    file.write("Binary Moments: " + self.show_binary_moments() + "\n")
+                    file.write("Surface Area: " + self.show_surface_area() + "\n")
+                    file.write("Circiut: " + self.show_circiut() + "\n")
+                    file.write("Aspect Ratio: " + self.show_aspect_ratio() + "\n")
+                    file.write("Extent: " + self.show_extent() + "\n")
+                    file.write("Solidity: " + self.show_Solidity() + "\n")
+                    file.write("Equivalent Diameter: " + self.show_equivalent_diameter() + "\n")
+
+                print(f"Dane zostały zapisane w pliku: {file_path}")
+            except Exception as e:
+                print(f"Wystąpił błąd podczas zapisywania danych do pliku: {e}")
 
 
 class LutWindow:
