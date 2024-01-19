@@ -394,26 +394,27 @@ class ImageWindow(Window):
         menu = tk.Menu(menu_button, tearoff=0)
         menu_button.configure(menu=menu)
 
-        menu.add_command(label="Smooth Image average", command=lambda: self.show_smooth_image_opencv('average'))
-        menu.add_command(label="Smooth Image weighted", command=lambda: self.show_smooth_image_opencv('weighted'))
-        menu.add_command(label="Smooth Image gaussian", command=lambda: self.show_smooth_image_opencv('gaussian'))
-        menu.add_command(label="Sharp Image Maska1", command=lambda: self.show_sharp_image('Pierwsza'))
-        menu.add_command(label="Smooth Image Maska2", command=lambda: self.show_sharp_image('Druga'))
-        menu.add_command(label="Smooth Image Maska3", command=lambda: self.show_sharp_image('Trzecia'))
-        menu.add_command(label="Sobel Directional E", command=lambda: self.show_sobel_directional('E'))
-        menu.add_command(label="Sobel Directional SE", command=lambda: self.show_sobel_directional('SE'))
-        menu.add_command(label="Sobel Directional S", command=lambda: self.show_sobel_directional('S'))
-        menu.add_command(label="Sobel Directional WS", command=lambda: self.show_sobel_directional('WS'))
-        menu.add_command(label="Sobel Directional W", command=lambda: self.show_sobel_directional('W'))
-        menu.add_command(label="Sobel Directional WN", command=lambda: self.show_sobel_directional('WN'))
-        menu.add_command(label="Sobel Directional N", command=lambda: self.show_sobel_directional('N'))
-        menu.add_command(label="Sobel Directional NE", command=lambda: self.show_sobel_directional('NE'))
+        menu.add_command(label="Wygładanie liniowe", command=lambda: self.show_smooth_image_opencv('average'))
+        menu.add_command(label="Wygładanie liniowe z wagami", command=lambda: self.show_smooth_image_opencv('weighted'))
+        menu.add_command(label="Wygładzenie liniowe bez wag", command=lambda: self.show_smooth_image_opencv('Bez'))
+        menu.add_command(label="Wygładanie liniowe metodą Gausowsską", command=lambda: self.show_smooth_image_opencv('gaussian'))
+        menu.add_command(label="Wyostrzenie obrazu maską [0, -1, 0], [-1, 4, -1], [0, -1, 0]", command=lambda: self.show_sharp_image('Pierwsza'))
+        menu.add_command(label="Wyostrzenie obrazu maską [-1, -1, -1], [-1, 8, -1], [-1, -1, -1]", command=lambda: self.show_sharp_image('Druga'))
+        menu.add_command(label="Wyostrzenie obrazu maską [1, -2, 1], [-2, 4, -2], [1, -2, 1]", command=lambda: self.show_sharp_image('Trzecia'))
+        menu.add_command(label="Sobel kierunkowy E", command=lambda: self.show_sobel_directional('E'))
+        menu.add_command(label="Sobel kierunkowy SE", command=lambda: self.show_sobel_directional('SE'))
+        menu.add_command(label="Sobel kierunkowy S", command=lambda: self.show_sobel_directional('S'))
+        menu.add_command(label="Sobel kierunkowy WS", command=lambda: self.show_sobel_directional('WS'))
+        menu.add_command(label="Sobel kierunkowy W", command=lambda: self.show_sobel_directional('W'))
+        menu.add_command(label="Sobel kierunkowy WN", command=lambda: self.show_sobel_directional('WN'))
+        menu.add_command(label="Sobel kierunkowy N", command=lambda: self.show_sobel_directional('N'))
+        menu.add_command(label="Sobel kierunkowy NE", command=lambda: self.show_sobel_directional('NE'))
         menu.add_command(label="Sobel", command=lambda: self.show_sobel())
-        menu.add_command(label="Prewwit", command=lambda: self.show_prewwit())
         menu.add_command(label="User Border Constant", command=lambda: self.show_user_border_const())
         menu.add_command(label="User Border Replicate", command=lambda: self.show_user_border_replicate())
         menu.add_command(label="Border Reflect", command=lambda: self.show_border_reflect())
         menu.add_command(label="Border Wrap", command=lambda: self.show_border_wrap())
+        menu.add_command(label="Filtr medianowy", command=lambda: self.show_median_filter())
 
         menu_button = tk.Menubutton(top_panel, text="Lab5", underline=0, padx=5)
         menu_button.pack(side=tk.LEFT)
@@ -431,10 +432,14 @@ class ImageWindow(Window):
 
         menu = tk.Menu(menu_button, tearoff=0)
         menu_button.configure(menu=menu)
-        menu.add_command(label="Erozja", command=lambda: self.show_erode())
-        menu.add_command(label="Dylacja", command=lambda: self.show_dilate())
-        menu.add_command(label="Open", command=lambda: self.show_opening())
-        menu.add_command(label="Close", command=lambda: self.show_closing())
+        menu.add_command(label="Erozja (Dysk)", command=lambda: self.show_erode("disk"))
+        menu.add_command(label="Erozja (Krzyż)", command=lambda: self.show_erode("cross"))
+        menu.add_command(label="Dylacja (Dysk)", command=lambda: self.show_dilate("disk"))
+        menu.add_command(label="Dylacja (Krzyż)", command=lambda: self.show_dilate("cross"))
+        menu.add_command(label="Open (Dysk)", command=lambda: self.show_opening("disk"))
+        menu.add_command(label="Open (Krzyż)", command=lambda: self.show_opening("cross"))
+        menu.add_command(label="Close (Dysk)", command=lambda: self.show_closing("disk"))
+        menu.add_command(label="Close (Krzyż)", command=lambda: self.show_closing("cross"))
         menu.add_command(label="Momenty", command=lambda: self.show_binary_moments())
         menu.add_command(label="Pole powierzchni", command=lambda: self.show_surface_area())
         menu.add_command(label="Obwód", command=lambda: self.show_circiut())
@@ -443,6 +448,14 @@ class ImageWindow(Window):
         menu.add_command(label="Solidity (Stożkowatość)", command=lambda: self.show_Solidity())
         menu.add_command(label="Equivalent Diameter (Średnica równoważna)", command=lambda: self.show_equivalent_diameter())
         menu.add_command(label="Exportuj do txt", command=lambda: self.show_export_data_to_txt())
+
+        menu_button = tk.Menubutton(top_panel, text="Projekt", underline=0, padx=5)
+        menu_button.pack(side=tk.LEFT)
+
+        menu = tk.Menu(menu_button, tearoff=0)
+        menu_button.configure(menu=menu)
+
+        #menu.add_command(label="Porównaj", command=lambda: self.())
 
 
     # Lab 1
@@ -628,6 +641,8 @@ class ImageWindow(Window):
             kernel = np.array([[1, 2, 1], [2, user_input, 2], [1, 2, 1]], dtype=np.float32) / 8 + user_input
         elif mask_type == 'gaussian':
             kernel = cv2.getGaussianKernel(3, 0) @ cv2.getGaussianKernel(3, 0).T
+        elif mask_type == 'Bez':
+            kernel = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]], dtype=np.float32)
 
         smoothed_image_cv = cv2.filter2D(image_cv, -1, kernel)
         smoothed_image = Image.fromarray(smoothed_image_cv)
@@ -700,20 +715,18 @@ class ImageWindow(Window):
     def show_user_border_const(self):
         image_cv = np.array(self.image)
 
-        border = simpledialog.askinteger("Border", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+        border_value = simpledialog.askinteger("Border", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
 
-        border_image_cv = cv2.copyMakeBorder(image_cv, border, border, border, border, cv2.BORDER_CONSTANT,
-                                             value=[255, 255, 255])
+        border_image_cv = cv2.copyMakeBorder(image_cv, border_value, border_value, border_value, border_value, cv2.BORDER_CONSTANT, value=[border_value, border_value, border_value])
         border_image = Image.fromarray(border_image_cv)
 
         self.update_image(border_image)
 
     def show_user_border_replicate(self):
         image_cv = np.array(self.image)
-
-        border = simpledialog.askinteger("Border", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
-
-        border_image_cv = cv2.copyMakeBorder(image_cv, border, border, border, border, cv2.BORDER_REPLICATE)
+        border_value = simpledialog.askinteger("Border", "Wybierz wartość progowania:", minvalue=1, maxvalue=255)
+        fill_value = simpledialog.askinteger("Fill Value", "Wybierz wartość stałą do wypełnienia krawędzi obrazu:",minvalue=0, maxvalue=255)
+        border_image_cv = cv2.copyMakeBorder(image_cv, border_value, border_value, border_value, border_value, cv2.BORDER_CONSTANT, value=[fill_value, fill_value, fill_value])
         border_image = Image.fromarray(border_image_cv)
 
         self.update_image(border_image)
@@ -721,9 +734,8 @@ class ImageWindow(Window):
     def show_border_reflect(self, border=None):
         image_cv = np.array(self.image)
 
-        border_image_cv = cv2.copyMakeBorder(image_cv, border, cv2.BORDER_REFLECT)
+        border_image_cv = cv2.copyMakeBorder(image_cv, border, border, border, border, cv2.BORDER_REFLECT)
         border_image = Image.fromarray(border_image_cv)
-
         self.update_image(border_image)
 
     def show_border_wrap(self):
@@ -733,6 +745,32 @@ class ImageWindow(Window):
         border_image = Image.fromarray(border_image_cv)
 
         self.update_image(border_image)
+
+    def apply_median_filter(self, image, kernel_size):
+        result_image = cv2.medianBlur(image, kernel_size)
+        return result_image
+
+    def show_median_filter(self):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+
+        while True:
+            kernel_size = simpledialog.askinteger("Filtr medianowy",
+                                                  "Wybierz rozmiar maski, wpisz kolejno dla:\n3x3 wpisz 3\n5x5 wpisz 5\n7x7 wpisz 7\n9x9 wpisz 9\n",
+                                                  minvalue=3, maxvalue=9)
+
+            if kernel_size is not None:  # Jeżeli użytkownik nie anulował okna dialogowego
+                if kernel_size not in [4, 6, 8]:
+                    break
+                else:
+                    messagebox.showinfo("Błąd", "Nie można wybrać liczb 4, 6, 8. Wybierz inną wartość.")
+            else:
+                messagebox.showinfo("Informacja", "Anulowano filtr medianowy.")
+                return
+
+        result_image = self.apply_median_filter(image, kernel_size)
+        self.update_image(Image.fromarray(result_image))
+
+
 
     # Lab 5
 
@@ -780,6 +818,7 @@ class ImageWindow(Window):
         self.update_image(segmented_image_adaptive)
 
 #Lab 6
+    '''
     def show_erode(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
         kernel = np.ones((3, 3), np.uint8)
@@ -811,18 +850,80 @@ class ImageWindow(Window):
         closing_image = Image.fromarray(closing)
 
         self.update_image(closing_image)
+    '''
 
+    def show_erode(self, kernel_type='disk'):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
 
+        if kernel_type == 'disk':
+            kernel = np.ones((3, 3), np.uint8)
+        elif kernel_type == 'cross':
+            kernel = np.array([[0, 3, 0], [3, 3, 3], [0, 3, 0]], np.uint8)
+        else:
+            raise ValueError("Nieprawidłowy rodzaj kernela")
+
+        erode = cv2.erode(image, kernel, iterations=1)
+        erode_image = Image.fromarray(erode)
+
+        self.update_image(erode_image)
+
+    def show_dilate(self, kernel_type='disk'):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+
+        if kernel_type == 'disk':
+            kernel = np.ones((3, 3), np.uint8)
+        elif kernel_type == 'cross':
+            kernel = np.array([[0, 3, 0], [3, 3, 3], [0, 3, 0]], np.uint8)
+        else:
+            raise ValueError("Nieprawidłowy rodzaj kernela")
+
+        dilate = cv2.dilate(image, kernel, iterations=1)
+        dilate_image = Image.fromarray(dilate)
+
+        self.update_image(dilate_image)
+
+    def show_opening(self, kernel_type='disk'):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+
+        if kernel_type == 'disk':
+            kernel = np.ones((3, 3), np.uint8)
+        elif kernel_type == 'cross':
+            kernel = np.array([[0, 3, 0], [3, 3, 3], [0, 3, 0]], np.uint8)
+        else:
+            raise ValueError("Nieprawidłowy rodzaj kernela")
+
+        opening = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel)
+        opening_image = Image.fromarray(opening)
+
+        self.update_image(opening_image)
+
+    def show_closing(self, kernel_type='disk'):
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+
+        if kernel_type == 'disk':
+            kernel = np.ones((3, 3), np.uint8)
+        elif kernel_type == 'cross':
+            kernel = np.array([[0, 3, 0], [3, 3, 3], [0, 3, 0]], np.uint8)
+        else:
+            raise ValueError("Nieprawidłowy rodzaj kernela")
+
+        closing = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)
+        closing_image = Image.fromarray(closing)
+
+        self.update_image(closing_image)
 
     def show_binary_moments(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
         ret, thresh = cv2.threshold(image, 127, 255, 0)
         contours, hierarchy = cv2.findContours(thresh, 1, 2)
         cnt = contours[0]
-        M = cv2.moments(cnt)
+        moments = cv2.moments(cnt)
 
-        print(M)
-        return str(M)
+        moment_strings = [f"{key}={value};" for key, value in moments.items()]
+        result = " ".join(moment_strings)
+
+        print(result)
+        return result
 
     def show_surface_area(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
@@ -844,18 +945,25 @@ class ImageWindow(Window):
         perimeter = cv2.arcLength(biggest_contour, True)
         circiut = cv2.arcLength(biggest_contour, True)
 
-        print(circiut)
-        return str(circiut)
+        print(round(circiut, 0))
+        return str(round(circiut, 0))
 
     def show_aspect_ratio(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
         _, binary_image = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        area = 0
+
+        total_area = 0
+        total_pixels = 0
+
         for contour in contours:
-            area += cv2.contourArea(contour)
-        total_pixels = image.shape[0] * image.shape[1]
-        aspect_ratio = area / total_pixels
+            area = cv2.contourArea(contour)
+            total_area += area
+            x, y, w, h = cv2.boundingRect(contour)
+            object_pixels = w * h
+            total_pixels += object_pixels
+
+        aspect_ratio = total_area / total_pixels
 
         print(round(aspect_ratio, 2))
         return str(round(aspect_ratio, 2))
@@ -869,11 +977,9 @@ class ImageWindow(Window):
             area += cv2.contourArea(contour)
         total_pixels = image.shape[0] * image.shape[1]
         extent = area / total_pixels
-        extent = round(extent, 2)
-        extent_percentage = round(extent * 100)
 
-        print(extent_percentage, "%")
-        return f"{extent_percentage}%"
+        print(extent)
+        return str(extent)
 
     def show_Solidity(self):
         gray_image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
@@ -900,10 +1006,9 @@ class ImageWindow(Window):
         equivalent_diameter = np.sqrt(4 * area / np.pi)
 
         print(round(equivalent_diameter, 2))
-        return round(equivalent_diameter, 2)
+        return str(round(equivalent_diameter, 2))
 
     def show_export_data_to_txt(self):
-        # Użytkownik wybiera miejsce zapisu pliku
         file_path = filedialog.asksaveasfilename(
             defaultextension=".txt",
             filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
@@ -925,6 +1030,8 @@ class ImageWindow(Window):
                 print(f"Dane zostały zapisane w pliku: {file_path}")
             except Exception as e:
                 print(f"Wystąpił błąd podczas zapisywania danych do pliku: {e}")
+
+# Projekt
 
 
 class LutWindow:
