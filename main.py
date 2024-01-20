@@ -455,7 +455,7 @@ class ImageWindow(Window):
         menu = tk.Menu(menu_button, tearoff=0)
         menu_button.configure(menu=menu)
 
-        #menu.add_command(label="Porównaj", command=lambda: self.())
+        #menu.add_command(label="Porównaj obrazy", command=lambda: self.())
 
 
     # Lab 1
@@ -916,14 +916,19 @@ class ImageWindow(Window):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
         ret, thresh = cv2.threshold(image, 127, 255, 0)
         contours, hierarchy = cv2.findContours(thresh, 1, 2)
-        cnt = contours[0]
-        moments = cv2.moments(cnt)
 
-        moment_strings = [f"{key}={value};" for key, value in moments.items()]
-        result = " ".join(moment_strings)
+        moment_results = []
 
-        print(result)
-        return result
+        for cnt in contours:
+            moments = cv2.moments(cnt)
+            moment_strings = [f"{key}={value};" for key, value in moments.items()]
+            moment_results.append(" ".join(moment_strings))
+
+        for i, result in enumerate(moment_results):
+            print(f"Moments for object {i + 1}: {result}")
+
+        return moment_results
+
 
     def show_surface_area(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
@@ -1032,6 +1037,7 @@ class ImageWindow(Window):
                 print(f"Wystąpił błąd podczas zapisywania danych do pliku: {e}")
 
 # Projekt
+
 
 
 class LutWindow:
