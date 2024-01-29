@@ -925,7 +925,7 @@ class ImageWindow(Window):
             moment_results.append(" ".join(moment_strings))
 
         for i, result in enumerate(moment_results):
-            print(f"Moments for object {i + 1}: {result}")
+            print (str(f"Moments for object {i + 1}: {result}"))
 
         return moment_results
 
