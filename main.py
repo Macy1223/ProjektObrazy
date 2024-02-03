@@ -1,13 +1,14 @@
+# Importowanie niezbędnych bibliotek
 import tkinter as tk
 from tkinter import Tk, Frame, Button, filedialog
 from tkinter import simpledialog
-from PIL import Image, ImageTk, ImageChops, ImageStat
+from PIL import Image, ImageTk
 import numpy as np
 import os
 from tkinter import messagebox
 import cv2
 
-
+# Klasa Window służy jako podstawa dla wszystkich okien w aplikacji.
 class Window:
     tkWindow = None
     parent = None
@@ -17,26 +18,30 @@ class Window:
         self.tkWindow = tkWindow
         self.children = []
 
+    # Metoda dodająca okno potomne do listy
     def add_child(self, window):
         self.children.append(window)
 
+    # Metoda zamykająca okno i wszystkie okna potomne
     def close(self):
         [window.close() for window in self.children]
         self.tkWindow.destroy()
 
+    # Metoda sprawdzająca, czy okno jest głównym oknem aplikacji
     def isRoot(self):
         if self.parent is None:
             return True
         else:
             return False
 
-
+# Klasa Binary służy do operacji na obrazach binarnych, takich jak negacja, progowanie, redukcja poziomów szarości.
 class Binary:
     def __init__(self, image):
         self.image = image
         unique_colors = set(self.image.getdata())
         self.is_gray_scale = True if len(unique_colors) <= 256 else False
 
+    # Metoda negująca obraz
     def negate(self):
         image = self.preprocess_image()
         pixel_values = list(image.getdata())
@@ -45,6 +50,7 @@ class Binary:
         negated_image.putdata(negated_values)
         return negated_image
 
+    # Metoda do progowania obrazu
     def threshold(self, threshold_value, preserve=False):
         image = self.preprocess_image()
         pixel_values = list(image.getdata())
@@ -53,6 +59,7 @@ class Binary:
         threshold_image.putdata(threshold_values)
         return threshold_image
 
+    # Metoda do redukcji liczby poziomów szarości
     def reduce_grayscale_levels(self, levels):
         image = self.preprocess_image()
         pixel_values = list(image.getdata())
@@ -61,6 +68,7 @@ class Binary:
         new_image.putdata(new_pixel_values)
         return new_image
 
+    # Metoda do wstępnego przetwarzania obrazu
     def preprocess_image(self):
         image = self.image if self.image.mode == "L" else self.image.convert("L")
         return image
@@ -111,13 +119,15 @@ class Binary:
         xor_image = Image.fromarray(xor_array)
         return xor_image
 
-
+# Klasa Histogram służy do obliczania i operowania na histogramie obrazu.
 class Histogram:
     def __init__(self, image):
         self.image = image
+        # Sprawdzenie, czy obraz jest w skali szarości
         unique_colors = set(self.image.getdata())
         self.is_gray_scale = True if len(unique_colors) <= 256 else False
 
+    # Metoda obliczająca histogram obrazu
     def calculate_histogram(self):
         if self.is_gray_scale:
             histogram = self.image.histogram()
@@ -212,45 +222,16 @@ class Histogram:
 
         return stretched_values
 
-    def create_histogram_window(self, root, hist_data, color):
-        root_hist = tk.Toplevel(root)
-        root_hist.title(f"{color} Histogram")
-
-        canvas = tk.Canvas(root_hist, width=800, height=600, bg='white')
-        canvas.pack()
-
-        max_value = max(hist_data)
-
-        for i in range(256):
-            if hist_data[i] > 0:
-                canvas.create_line(50 + i * 3, 550, 50 + i * 3, 550 - (hist_data[i] * 500 / max_value), fill=color)
-
-        for i in range(0, 256, 10):
-            canvas.create_text(50 + i * 3, 570, anchor=tk.N, text=str(i), fill="black")
-
-        for i in range(0, max_value + 1, int(max_value / 10)):
-            canvas.create_text(50, 550 - (i * 500 / max_value), anchor=tk.E, text=str(i), fill="black")
-
-        def show_value(event):
-            x = canvas.canvasx(event.x)
-            y = canvas.canvasy(event.y)
-            val = max_value - int((y - 50) / 500 * max_value)
-            canvas.delete("value_text")
-            canvas.create_text(x, y - 10, anchor=tk.S, text=str(val), tag="value_text", fill="black")
-
-        canvas.bind("<Motion>", show_value)
-
-
+# Klasa HistogramWindow służy do wyświetlania histogramu obrazu w nowym oknie.
 class HistogramWindow:
     def __init__(self, image, path, parent):
-        self.image = image
+        self.image = image # Obraz źródłowy
         self.histogram = Histogram(image)
         self.path = path
         self.hist_window = tk.Toplevel(parent.tkWindow)
         self.create_histogram()
 
-        # super().__init__(self.hist_window, parent)
-
+    # Metoda do tworzenia i wyświetlania histogramu
     def create_histogram(self):
         result = self.histogram.calculate_histogram()
         if self.histogram.is_gray_scale:
@@ -312,7 +293,7 @@ class HistogramWindow:
         canvas.config(scrollregion=canvas.bbox("all"))
         return canvas
 
-
+# Klasa ImageWindow służy do wyświetlania i edycji obrazu w nowym oknie.
 class ImageWindow(Window):
     def __init__(self, image, path, parent):
         self.image_path = path
@@ -366,8 +347,7 @@ class ImageWindow(Window):
         menu.add_command(label="Redukcja poziomów szarości", command=self.show_reduce_grayscale)
         menu.add_command(label="Progowanie Binarne", command=self.show_threshold)
         menu.add_command(label="Progowanie z zachowanie poziomów szarości", command=self.show_threshold_preserve)
-        menu.add_command(label="Rozciąganie Histogramu z zakresem p1-p2 do q3-q4",
-                         command=self.show_histogram_stretching)
+        menu.add_command(label="Rozciąganie Histogramu z zakresem p1-p2 do q3-q4",command=self.show_histogram_stretching)
 
         menu_button = tk.Menubutton(top_panel, text="Lab3", underline=0, padx=5)
         menu_button.pack(side=tk.LEFT)
@@ -442,7 +422,7 @@ class ImageWindow(Window):
         menu.add_command(label="Close (Krzyż)", command=lambda: self.show_closing("cross"))
         menu.add_command(label="Momenty", command=lambda: self.show_binary_moments())
         menu.add_command(label="Pole powierzchni", command=lambda: self.show_surface_area())
-        menu.add_command(label="Obwód", command=lambda: self.show_circiut())
+        menu.add_command(label="Obwód", command=lambda: self.show_circuit())
         menu.add_command(label="AspectRatio (Współczynnik proporcji)", command=lambda: self.show_aspect_ratio())
         menu.add_command(label="Extent (Stopień wypełnienia)", command=lambda: self.show_extent())
         menu.add_command(label="Solidity (Stożkowatość)", command=lambda: self.show_Solidity())
@@ -454,8 +434,6 @@ class ImageWindow(Window):
 
         menu = tk.Menu(menu_button, tearoff=0)
         menu_button.configure(menu=menu)
-
-        #menu.add_command(label="Porównaj obrazy", command=lambda: self.())
 
 
     # Lab 1
@@ -809,48 +787,14 @@ class ImageWindow(Window):
 
     def show_adaptive_thresholding(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        thresholded_image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+        image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
 
-        segmented_image_adaptive_cv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,
-                                                            11, 2)
+        segmented_image_adaptive_cv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,11, 2)
         segmented_image_adaptive = Image.fromarray(segmented_image_adaptive_cv)
 
         self.update_image(segmented_image_adaptive)
 
 #Lab 6
-    '''
-    def show_erode(self):
-        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        kernel = np.ones((3, 3), np.uint8)
-        erode = cv2.erode(image, kernel, iterations=1)
-        erode_image = Image.fromarray(erode)
-
-        self.update_image(erode_image)
-
-    def show_dilate(self):
-        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        kernel = np.ones((3, 3), np.uint8)
-        dilate = cv2.dilate(image, kernel, iterations=1)
-        dilate_image = Image.fromarray(dilate)
-
-        self.update_image(dilate_image)
-
-    def show_opening(self):
-        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        kernel = np.ones((3, 3), np.uint8)
-        opening = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel)
-        opening_image = Image.fromarray(opening)
-
-        self.update_image(opening_image)
-
-    def show_closing(self):
-        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        kernel = np.ones((3, 3), np.uint8)
-        closing = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)
-        closing_image = Image.fromarray(closing)
-
-        self.update_image(closing_image)
-    '''
 
     def show_erode(self, kernel_type='disk'):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
@@ -915,26 +859,26 @@ class ImageWindow(Window):
     def show_binary_moments(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
         ret, thresh = cv2.threshold(image, 127, 255, 0)
-        contours, hierarchy = cv2.findContours(thresh, 1, 2)
+        contours, _ = cv2.findContours(thresh, 1, 2)
 
         moment_results = []
 
-        for cnt in contours:
+        for i, cnt in enumerate(contours):
             moments = cv2.moments(cnt)
-            moment_strings = [f"{key}={value};" for key, value in moments.items()]
-            moment_results.append(" ".join(moment_strings))
+            moment_results.append(f"Moments for object {i + 1}: {' '.join(f'{key}={value};' for key, value in moments.items())}")
 
-        for i, result in enumerate(moment_results):
-            print (str(f"Moments for object {i + 1}: {result}"))
+        for result in moment_results:
+            print(result)
 
-        return moment_results
+        return str(moment_results)
 
 
     def show_surface_area(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        _, binary_image = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY_INV)
+        _, binary_image = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
+        kernel = np.ones((5, 5), np.uint8)
+        binary_image = cv2.morphologyEx(binary_image, cv2.MORPH_CLOSE, kernel)
         contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
         area = 0
         for contour in contours:
             area += cv2.contourArea(contour)
@@ -942,16 +886,15 @@ class ImageWindow(Window):
         print(area)
         return str(area)
 
-    def show_circiut(self):
+    def show_circuit(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        _, binary_image = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY_INV)
+        _, binary_image = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
         contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         biggest_contour = max(contours, key=cv2.contourArea)
         perimeter = cv2.arcLength(biggest_contour, True)
-        circiut = cv2.arcLength(biggest_contour, True)
 
-        print(round(circiut, 0))
-        return str(round(circiut, 0))
+        print(round(perimeter, 0))
+        return str(round(perimeter, 0))
 
     def show_aspect_ratio(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
@@ -975,33 +918,33 @@ class ImageWindow(Window):
 
     def show_extent(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        _, binary_image = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY_INV)
+        _, binary_image = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
         contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        area = 0
-        for contour in contours:
-            area += cv2.contourArea(contour)
-        total_pixels = image.shape[0] * image.shape[1]
-        extent = area / total_pixels
+        area = cv2.contourArea(contours[0])
+        x, y, w, h = cv2.boundingRect(contours[0])
+        rect_area = w * h
+        extent = float(area) / rect_area if rect_area != 0 else 0
+        extent = round(extent, 2)
 
         print(extent)
         return str(extent)
 
     def show_Solidity(self):
-        gray_image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        pil_gray_image = Image.fromarray(gray_image)
-        white_image = Image.new('L', pil_gray_image.size, 255)
-        diff_image = ImageChops.difference(pil_gray_image, white_image)
-        stat = ImageStat.Stat(diff_image)
-        mean_diff = stat.mean[0]
-        solidity_value = 1.0 - (mean_diff / 255.0)
-        solidity_value_percentage = round(solidity_value * 100)
+        image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        _, binary_image = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
+        contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        area = cv2.contourArea(contours[0])
+        hull = cv2.convexHull(contours[0])
+        hull_area = cv2.contourArea(hull)
+        solidity = float(area) / hull_area if hull_area != 0 else 0
+        solidity = round(solidity, 2)
 
-        print(round(solidity_value_percentage, 2), "%")
-        return f"{round(solidity_value_percentage, 2)}%"
+        print(solidity)
+        return str(solidity)
 
     def show_equivalent_diameter(self):
         image = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        _, binary_image = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY_INV)
+        _, binary_image = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
         contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         area = 0
@@ -1026,7 +969,7 @@ class ImageWindow(Window):
                 with open(file_path, 'w') as file:
                     file.write("Binary Moments: " + self.show_binary_moments() + "\n")
                     file.write("Surface Area: " + self.show_surface_area() + "\n")
-                    file.write("Circiut: " + self.show_circiut() + "\n")
+                    file.write("Circiut: " + self.show_circuit() + "\n")
                     file.write("Aspect Ratio: " + self.show_aspect_ratio() + "\n")
                     file.write("Extent: " + self.show_extent() + "\n")
                     file.write("Solidity: " + self.show_Solidity() + "\n")
@@ -1042,12 +985,14 @@ class ImageWindow(Window):
 
 class LutWindow:
     def __init__(self, image, path, parent):
+        # Inicjalizacja okna LUT z podanym obrazem, ścieżką do pliku i referencją do obiektu nadrzędnego.
         self.image = image
         self.path = path
         self.histogram = Histogram(image)
         hist_window = self.show_LUT(parent.tkWindow)
 
     def show_LUT(self, parent_window):
+        # Wyświetlenie okna z tabelą LUT (Lookup Table) dla obrazu.
         lut_window = tk.Toplevel(parent_window)
         lut_window.title("LUT Table")
         lut_list = tk.Listbox(lut_window, height=20, width=40)
@@ -1068,7 +1013,7 @@ class LutWindow:
         return lut_window
 
     def print_LUT_channel(self, data, lut_list, label=None):
-
+    # Drukowanie tabeli LUT dla pojedynczego kanału (lub skali szarości).
         if label is not None:
             lut_list.insert(tk.END, "\n")
             lut_list.insert(tk.END, label)
@@ -1085,17 +1030,20 @@ class LutWindow:
 
 class Multi:
     def __init__(self, image):
+        # Inicjalizacja obiektu klasy z obrazem, przetworzenie obrazu na skalę szarości i sprawdzenie, czy obraz jest w skali szarości.
         self.image = self.preprocess_image(image)
         unique_colors = set(self.image.getdata())
         self.is_gray_scale = True if len(unique_colors) <= 256 else False
 
     def preprocess_image(self, image=None):
+        # Przetworzenie obrazu na skalę szarości, jeśli nie jest już w tej skali.
         if image is None:
             image = self.image
         image = image if image.mode == "L" else image.convert("L")
         return image
 
     def addImage(self, image_2, limitSaturation=False):
+        # Dodanie dwóch obrazów. Możliwość ograniczenia nasycenia przez zredukowanie liczby poziomów szarości.
         image = self.image
         image_2 = self.preprocess_image(image_2)
         if limitSaturation:
@@ -1110,6 +1058,7 @@ class Multi:
         return added_image
 
     def sub_image(self, image_2):
+        # Odejmowanie jednego obrazu od drugiego.
         image = self.image
         image_2 = self.preprocess_image(image_2)
 
@@ -1122,6 +1071,7 @@ class Multi:
         return sub_image
 
     def operate_on_image(self, value=1, operand="+", ):
+        # Operacje matematyczne na obrazie: dodawanie, odejmowanie, mnożenie, dzielenie.
         pixel_values = list(self.image.getdata())
         if operand == "+":
             new_pixel_values = [np.clip(pixel_value + value, 0, 255) for pixel_value in pixel_values]
@@ -1137,6 +1087,8 @@ class Multi:
         return new_image
 
     def reduce_grayscale_levels(self, image):
+        # Redukcja liczby poziomów szarości w obrazie, aby ograniczyć nasycenie.
+        pixel_values = list(image.getdata())
         pixel_values = list(image.getdata())
         new_pixel_values = [np.clip(int(value / 2), 1, 127) for value in pixel_values]
 
@@ -1200,7 +1152,7 @@ def show_reduce_grayscale(self):
     image = binary.reduce_grayscale_levels(levels)
     self.update_image(image)
 
-
+# Klasa MainWindow służy jako główne okno aplikacji, z którego można otwierać obrazy i wykonywać na nich operacje.
 class MainWindow(Window):
     def __init__(self):
         rootWindow = Tk()
@@ -1234,13 +1186,13 @@ class MainWindow(Window):
             image_window = ImageWindow(path=file_path, image=Image.open(file_path), parent=self)
             self.add_child(image_window)
 
-
+# Klasa App służy do uruchomienia aplikacji.
 class App:
     @staticmethod
     def run():
         main_window = MainWindow()
         main_window.start()
 
-
+# Uruchomienie aplikacji
 if __name__ == "__main__":
     App.run()
