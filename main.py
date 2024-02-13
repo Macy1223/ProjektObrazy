@@ -429,12 +429,6 @@ class ImageWindow(Window):
         menu.add_command(label="Equivalent Diameter (Średnica równoważna)", command=lambda: self.show_equivalent_diameter())
         menu.add_command(label="Exportuj do txt", command=lambda: self.show_export_data_to_txt())
 
-        menu_button = tk.Menubutton(top_panel, text="Projekt", underline=0, padx=5)
-        menu_button.pack(side=tk.LEFT)
-
-        menu = tk.Menu(menu_button, tearoff=0)
-        menu_button.configure(menu=menu)
-
 
     # Lab 1
     def show_histogram(self):
@@ -979,9 +973,40 @@ class ImageWindow(Window):
             except Exception as e:
                 print(f"Wystąpił błąd podczas zapisywania danych do pliku: {e}")
 
-# Projekt
+class ImageComparator:
+    def __init__(self, tolerance=30):
+        # Inicjalizacja klasy z domyślną wartością tolerancji różnic pikseli na 30
+        self.image1 = None  # Inicjalizacja zmiennej do przechowywania pierwszego obrazu
+        self.image2 = None  # Inicjalizacja zmiennej do przechowywania drugiego obrazu
+        self.tolerance = tolerance  # Przechowywanie wartości tolerancji dla różnic pikseli
 
+    def load_images(self, path1, path2):
+        # Metoda do wczytywania obrazów z podanych ścieżek
+        self.image1 = cv2.imread(path1)  # Wczytanie pierwszego obrazu z podanej ścieżki
+        self.image2 = cv2.imread(path2)  # Wczytanie drugiego obrazu z podanej ścieżki
+        if self.image1 is None or self.image2 is None:
+            # Sprawdzenie, czy oba obrazy zostały pomyślnie wczytane
+            return False  # Zwrócenie wartości False, jeśli którykolwiek z obrazów nie został wczytany
+        return True  # Zwrócenie wartości True, gdy oba obrazy zostały pomyślnie wczytane
 
+    def compare_images(self):
+        # Metoda do porównywania dwóch obrazów
+        if self.image1.shape != self.image2.shape:
+            # Sprawdzenie, czy obrazy mają takie same wymiary
+            return False  # Zwrócenie wartości False, jeśli obrazy mają różne wymiary
+
+        difference = cv2.absdiff(self.image1, self.image2)  # Obliczenie bezwzględnej różnicy między obrazami
+        mask = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)  # Konwersja różnicy na obraz w skali szarości
+        _, mask = cv2.threshold(mask, self.tolerance, 255, cv2.THRESH_BINARY)  # Zastosowanie progu, aby zidentyfikować znaczące różnice
+        differences = cv2.countNonZero(mask)  # Policzenie niezerowych pikseli w masce, co wskazuje na różnice
+        self.image2[mask != 0] = [0, 0, 255]  # Oznaczenie różnic na czerwono w drugim obrazie
+        return differences  # Zwrócenie liczby różnych pikseli
+
+    def show_difference(self):
+        # Metoda do wyświetlania obrazu z oznaczonymi różnicami
+        cv2.imshow("Roznice w pikselach", self.image2)  # Wyświetlenie drugiego obrazu z oznaczonymi różnicami
+        cv2.waitKey(0)  # Oczekiwanie na naciśnięcie klawisza przez użytkownika
+        cv2.destroyAllWindows()  # Zamknięcie wszystkich okien OpenCV
 
 class LutWindow:
     def __init__(self, image, path, parent):
@@ -1159,15 +1184,20 @@ class MainWindow(Window):
         rootWindow.title("Projekt na Obrazy")
         rootWindow.geometry("400x50")
 
-        panel = Frame(rootWindow, width=200, height=50)
+        panel = Frame(rootWindow, width=400, height=100)
         panel.pack()
         button1 = Button(panel, text="Otwórz Obraz pierwszy", command=self.open_new_image1)
         button1.pack(side="left", padx=10)
         button2 = Button(panel, text="Otwórz Obraz drugi", command=self.open_new_image2)
         button2.pack(side="right", padx=10)
 
+        compare_button = Button(panel, text="Porównaj obrazy", command=self.open_comparison_window)
+        compare_button.pack(side="left", padx=10)
+
         super().__init__(rootWindow, None)
         self.tkWindow = rootWindow
+        self.image1_path = None
+        self.image2_path = None
 
     def start(self):
         self.tkWindow.mainloop()
@@ -1176,6 +1206,7 @@ class MainWindow(Window):
         file_path = filedialog.askopenfilename()
 
         if file_path:
+            self.image1_path = file_path
             image_window = ImageWindow(path=file_path, image=Image.open(file_path), parent=self)
             self.add_child(image_window)
 
@@ -1183,8 +1214,24 @@ class MainWindow(Window):
         file_path = filedialog.askopenfilename()
 
         if file_path:
+            self.image2_path = file_path
             image_window = ImageWindow(path=file_path, image=Image.open(file_path), parent=self)
             self.add_child(image_window)
+
+    def open_comparison_window(self):
+        if self.image1_path is None or self.image2_path is None:
+            tk.messagebox.showerror("Błąd", "Najpierw wybierz obrazy do porównania.")
+            return
+
+        comparator = ImageComparator(tolerance=25)
+        if comparator.load_images(self.image1_path, self.image2_path):
+            differences = comparator.compare_images()
+            if differences:
+                comparator.show_difference()
+                tk.messagebox.showinfo("Różnice", f"Znaleziono {differences} różnic.")
+            else:
+                tk.messagebox.showinfo("Brak różnic", "Obrazy są identyczne lub nie udało się ich porównać.")
+
 
 # Klasa App służy do uruchomienia aplikacji.
 class App:
