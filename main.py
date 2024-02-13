@@ -1,5 +1,6 @@
 # Importowanie niezbędnych bibliotek
 import tkinter as tk
+from tkinter import messagebox
 from tkinter import Tk, Frame, Button, filedialog
 from tkinter import simpledialog
 from PIL import Image, ImageTk
@@ -973,41 +974,59 @@ class ImageWindow(Window):
             except Exception as e:
                 print(f"Wystąpił błąd podczas zapisywania danych do pliku: {e}")
 
+
 class ImageComparator:
     def __init__(self, tolerance=30):
-        # Inicjalizacja klasy z domyślną wartością tolerancji różnic pikseli na 30
-        self.image1 = None  # Inicjalizacja zmiennej do przechowywania pierwszego obrazu
-        self.image2 = None  # Inicjalizacja zmiennej do przechowywania drugiego obrazu
-        self.tolerance = tolerance  # Przechowywanie wartości tolerancji dla różnic pikseli
+        self.image1 = None
+        self.image2 = None
+        self.tolerance = tolerance
 
     def load_images(self, path1, path2):
-        # Metoda do wczytywania obrazów z podanych ścieżek
-        self.image1 = cv2.imread(path1)  # Wczytanie pierwszego obrazu z podanej ścieżki
-        self.image2 = cv2.imread(path2)  # Wczytanie drugiego obrazu z podanej ścieżki
+        self.image1 = cv2.imread(path1)
+        self.image2 = cv2.imread(path2)
         if self.image1 is None or self.image2 is None:
-            # Sprawdzenie, czy oba obrazy zostały pomyślnie wczytane
-            return False  # Zwrócenie wartości False, jeśli którykolwiek z obrazów nie został wczytany
-        return True  # Zwrócenie wartości True, gdy oba obrazy zostały pomyślnie wczytane
+            return False
+        return True
 
     def compare_images(self):
-        # Metoda do porównywania dwóch obrazów
         if self.image1.shape != self.image2.shape:
-            # Sprawdzenie, czy obrazy mają takie same wymiary
-            return False  # Zwrócenie wartości False, jeśli obrazy mają różne wymiary
-
-        difference = cv2.absdiff(self.image1, self.image2)  # Obliczenie bezwzględnej różnicy między obrazami
-        mask = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)  # Konwersja różnicy na obraz w skali szarości
-        _, mask = cv2.threshold(mask, self.tolerance, 255, cv2.THRESH_BINARY)  # Zastosowanie progu, aby zidentyfikować znaczące różnice
-        differences = cv2.countNonZero(mask)  # Policzenie niezerowych pikseli w masce, co wskazuje na różnice
-        self.image2[mask != 0] = [0, 0, 255]  # Oznaczenie różnic na czerwono w drugim obrazie
-        return differences  # Zwrócenie liczby różnych pikseli
+            return False
+        difference = cv2.absdiff(self.image1, self.image2)
+        mask = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
+        _, mask = cv2.threshold(mask, self.tolerance, 255, cv2.THRESH_BINARY)
+        differences = cv2.countNonZero(mask)
+        self.image2[mask != 0] = [0, 0, 255]
+        return differences
 
     def show_difference(self):
-        # Metoda do wyświetlania obrazu z oznaczonymi różnicami
-        cv2.imshow("Roznice w pikselach", self.image2)  # Wyświetlenie drugiego obrazu z oznaczonymi różnicami
-        cv2.waitKey(0)  # Oczekiwanie na naciśnięcie klawisza przez użytkownika
-        cv2.destroyAllWindows()  # Zamknięcie wszystkich okien OpenCV
+        cv2.imshow("Roznice w pikselach", self.image2)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
+    def compare_lines(self):
+        if self.image1.shape != self.image2.shape:
+            return False
+        identical_lines = 0
+        different_lines = 0
+        for i in range(self.image1.shape[0]):
+            line1 = self.image1[i, :]
+            line2 = self.image2[i, :]
+            difference = cv2.absdiff(line1, line2)
+            if len(line1.shape) > 2 and line1.shape[2] == 3:
+                difference = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
+            _, mask = cv2.threshold(difference, self.tolerance, 255, cv2.THRESH_BINARY)
+            if cv2.countNonZero(mask) == 0:
+                identical_lines += 1
+            else:
+                different_lines += 1
+        return identical_lines, different_lines
+
+    def display_line_comparison_results(self, parent=None):
+        identical_lines, different_lines = self.compare_lines()
+        if identical_lines is False:
+            tk.messagebox.showerror("Błąd", "Obrazy mają różne wymiary!", parent=parent)
+        else:
+            tk.messagebox.showinfo("Wyniki porównania linii", f"Identyczne linie: {identical_lines}\nRóżne linie: {different_lines}", parent=parent)
 class LutWindow:
     def __init__(self, image, path, parent):
         # Inicjalizacja okna LUT z podanym obrazem, ścieżką do pliku i referencją do obiektu nadrzędnego.
@@ -1226,12 +1245,32 @@ class MainWindow(Window):
         comparator = ImageComparator(tolerance=25)
         if comparator.load_images(self.image1_path, self.image2_path):
             differences = comparator.compare_images()
-            if differences:
-                comparator.show_difference()
-                tk.messagebox.showinfo("Różnice", f"Znaleziono {differences} różnic.")
-            else:
-                tk.messagebox.showinfo("Brak różnic", "Obrazy są identyczne lub nie udało się ich porównać.")
+            # Porównanie linii i uzyskanie wyników
+            identical_lines, different_lines = comparator.compare_lines()
 
+            # Pokazanie liczby różniących się pikseli
+            messagebox.showinfo("Różnice", f"Liczba różniących się pikseli: {differences}")
+
+            # Pokazanie informacji o liniach
+            messagebox.showinfo("Porównanie linii","Identyczne linie: {identical_lines}\nRóżne linie: {different_lines}")
+
+            # Pokazanie obrazu z różnicami
+            self.show_image_differences(comparator.image2)  # Zakładając, że comparator.image2 to zmodyfikowany obraz
+
+    def show_image_differences(self, image):
+        # Tworzenie nowego okna Tkinter do wyświetlenia obrazu
+        difference_window = tk.Toplevel(self.tkWindow)
+        difference_window.title("Różnice w obrazach")
+
+        # Konwersja obrazu OpenCV na format zrozumiały dla Tkinter
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Konwersja z BGR na RGB
+        image = Image.fromarray(image)  # Konwersja na obiekt PIL.Image
+        photo = ImageTk.PhotoImage(image=image)
+
+        # Wyświetlanie obrazu w nowym oknie
+        label = tk.Label(difference_window, image=photo)
+        label.image = photo  # Utrzymanie referencji, aby obraz nie został usunięty przez garbage collector
+        label.pack()
 
 # Klasa App służy do uruchomienia aplikacji.
 class App:
